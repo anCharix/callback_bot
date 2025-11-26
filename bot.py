@@ -148,7 +148,7 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     meneger_url = f'https://t.me/{callback.from_user.username}'
     markup = InlineKeyboardBuilder()
     markup.add(InlineKeyboardButton(text="Заказчик", url=meneger_url))
-    await bot.send_message(chat_id=-1003088612163, text=new_task, reply_markup=markup.as_markup(), parse_mode="markdown")
+    await bot.send_message(chat_id=-1002420600068, text=new_task, reply_markup=markup.as_markup(), parse_mode="markdown")
 
     kb_list = [[InlineKeyboardButton(text="🖋️ Создать заявку", callback_data="task_for_channel")],
                [InlineKeyboardButton(text="💰 Баланс", callback_data="balance"),
