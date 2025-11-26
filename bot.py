@@ -152,7 +152,8 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     kb_list = [[InlineKeyboardButton(text="🖋️ Создать заявку", callback_data="task_for_channel")],
                [InlineKeyboardButton(text="💰 Баланс", callback_data="balance"),
-                InlineKeyboardButton(text="❗ Правила", callback_data="rules")]]
+                InlineKeyboardButton(text="❗ Правила", callback_data="rules")],
+               [InlineKeyboardButton(text="👷‍♂️ Проверить рабочего", callback_data="check_employer")]]
     markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
     await callback.message.edit_text("✅ Заявка успешно отправлена!\nОжидайте откликов от исполнителей.",
                                      reply_markup=markup)
