@@ -74,8 +74,10 @@ async def get_contact(message: Message, bot: Bot) -> None:
         # Добавляем юзера
         await add_telegram_user(session, user_id, username, full_name, phone_number, 0, 0)
 
-        kb_list = [[InlineKeyboardButton(text="Выложить заявку", callback_data="task_for_channel")],
-                   [InlineKeyboardButton(text="Баланс", callback_data="balance")]]
+        kb_list = [[InlineKeyboardButton(text="🖋️ Создать заявку", callback_data="task_for_channel")],
+                   [InlineKeyboardButton(text="💰 Баланс", callback_data="balance"),
+                    InlineKeyboardButton(text="❗ Правила", callback_data="rules")],
+                   [InlineKeyboardButton(text="👷‍♂️ Проверить рабочего", callback_data="check_employer")]]
         markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
         await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id - 1)
         await message.delete()
