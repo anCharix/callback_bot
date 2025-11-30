@@ -168,6 +168,7 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     place = data.get("place", 0)
     conditions = data.get("conditions", 0)
     user_name = data.get("user_name", 0)
+    print(task_information, place, conditions, user_name)
 
     if not user_name:
         user_name = callback.from_user.username
