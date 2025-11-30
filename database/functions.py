@@ -81,3 +81,12 @@ async def get_feedbacks_by_username(session: AsyncSession, username: str) -> (li
         return employer.feedbacks, rate
 
     return None  # если отзывов нет или пользователь не найден
+
+
+#Проверка на админов
+async def check_admins(user_id):
+    admins_id = [285907768, 1132743840, 1443646292]
+
+    if user_id in admins_id:
+        return True
+    return False

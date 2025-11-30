@@ -14,7 +14,7 @@ from sqlalchemy import select
 from database.session import get_session
 from database.models import User, Employee
 from database.functions import add_telegram_user, add_success_task, get_success_tasks, get_feedbacks_by_username, \
-    add_feedback
+    add_feedback, check_admins
 
 router = Router()
 
@@ -23,6 +23,7 @@ class UsersAnswers(StatesGroup):
     task = State()
     place = State()
     conditions = State()
+    user_name = State()
 
 
 class Feedback(StatesGroup):
@@ -116,8 +117,48 @@ async def apply_conditions(message: Message, state: FSMContext, bot: Bot):
                [InlineKeyboardButton(text="Отменить", callback_data="cancel_task")]]
     markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
     await state.update_data(conditions=message.text)
-    await message.answer("🔍 Проверьте информацию:\nЕсли всё правильно — нажмите «Отправить».\nЕсли хотите внести правки — нажмите «Отменить».",
-                            reply_markup=markup)
+    answer = "🔍 Проверьте информацию:\nЕсли всё правильно — нажмите «Отправить».\nЕсли хотите внести правки — нажмите «Отменить»."
+
+    # Проверка на админов
+    if check_admins(message.from_user.id):
+        kb_list.append([InlineKeyboardButton(text="Изменить пользователя", callback_data="change_user")])
+        answer += "\nЕсли хотите поменять пользователя - нажмите «Изменить пользователя»"
+
+    await message.answer(text=answer, reply_markup=markup)
+
+
+@router.callback_query(F.data == "change_user")
+async def change_users(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(UsersAnswers.user_name)
+    answer = (
+        "<b>✉️ Отправьте мне @username пользователя</b>.\n"
+        "Я заменю вашу ссылку на ссылку пользователя."
+    )
+    await callback.message.answer(text=answer, parse_mode="HTML")
+
+
+@router.message(UsersAnswers.user_name, F.text.startswith("@"))
+async def change_username(message: Message, state: FSMContext):
+    username = message.text.lstrip("@")
+
+    await state.update_data(user_name=username)
+
+    # После обновления пользователя возвращаемся в состояние отправки
+    await state.set_state(UsersAnswers.conditions)
+
+    kb_list = [
+        [InlineKeyboardButton(text="Отправить", callback_data="send_task")],
+        [InlineKeyboardButton(text="Отменить", callback_data="cancel_task")],
+    ]
+
+    answer = (
+        f"Пользователь изменён на {username} 👌\n\n"
+        "🔍 Проверьте заявку ещё раз.\n"
+        "Если всё правильно — нажмите «Отправить»."
+    )
+
+    markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
+    await message.answer(answer, reply_markup=markup)
 
 
 @router.callback_query(F.data == "send_task")
@@ -126,6 +167,10 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     task_information = data.get("task", 0)
     place = data.get("place", 0)
     conditions = data.get("conditions", 0)
+    user_name = data.get("user_name", 0)
+
+    if not user_name:
+        user_name = callback.from_user.username
 
     async for session in get_session():
         telegram_id = int(callback.from_user.id)
@@ -137,7 +182,7 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     new_task = (
     "🚨 *Новая заявка на выполнение работ!*\n\n"
-    f"👤 *Заказчик*: @{callback.from_user.username}\n\n"
+    f"👤 *Заказчик*: @{user_name}\n\n"
     f"📄 *Успешных заявок*: {success_task}\n\n"
     f"📝 *Описание:*\n{task_information}\n\n"
     f"📌 *Требования:*\n{conditions}\n\n"
@@ -145,7 +190,7 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     "💬 Для связи с заказчиком нажмите кнопку ниже 👇"
     )
 
-    meneger_url = f'https://t.me/{callback.from_user.username}'
+    meneger_url = f'https://t.me/{user_name}'
     markup = InlineKeyboardBuilder()
     markup.add(InlineKeyboardButton(text="Заказчик", url=meneger_url))
     await bot.send_message(chat_id=-1002420600068, text=new_task, reply_markup=markup.as_markup(), parse_mode="markdown")
@@ -210,7 +255,7 @@ async def check_employer(callback: CallbackQuery):
                                      parse_mode="HTML")
 
 
-@router.message(F.text.startswith("@"))
+@router.message(Feedback.username, F.text.startswith("@"))
 async def get_username(message: Message, state: FSMContext):
     username = message.text.strip().lstrip("@")
 
