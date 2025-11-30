@@ -164,46 +164,50 @@ async def change_username(message: Message, state: FSMContext):
 @router.callback_query(F.data == "send_task")
 async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     data = await state.get_data()
-    task_information = data.get("task", 0)
-    place = data.get("place", 0)
-    conditions = data.get("conditions", 0)
-    user_name = data.get("user_name", 0)
-    print(task_information, place, conditions, user_name)
-
-    if not user_name:
-        user_name = callback.from_user.username
+    task_information = data.get("task", "")
+    place = data.get("place", "")
+    conditions = data.get("conditions", "")
+    user_name = data.get("user_name") or callback.from_user.username  # берём username из state, если есть
 
     async for session in get_session():
         telegram_id = int(callback.from_user.id)
-
         success_task = await get_success_tasks(session, telegram_id=telegram_id)
         await add_success_task(session, telegram_id=telegram_id)
 
+    # Удаляем предыдущее сообщение
     await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id - 1)
 
+    # Формируем сообщение в HTML
     new_task = (
-    "🚨 *Новая заявка на выполнение работ!*\n\n"
-    f"👤 *Заказчик*: @{user_name}\n\n"
-    f"📄 *Успешных заявок*: {success_task}\n\n"
-    f"📝 *Описание:*\n{task_information}\n\n"
-    f"📌 *Требования:*\n{conditions}\n\n"
-    f"📍 *Место работы:*\n{place}\n\n"
-    "💬 Для связи с заказчиком нажмите кнопку ниже 👇"
+        "🚨 <b>Новая заявка на выполнение работ!</b>\n\n"
+        f"👤 <b>Заказчик:</b> @{user_name}\n"
+        f"📄 <b>Успешных заявок:</b> {success_task}\n"
+        f"📝 <b>Описание:</b>\n{task_information}\n"
+        f"📌 <b>Требования:</b>\n{conditions}\n"
+        f"📍 <b>Место работы:</b>\n{place}\n\n"
+        "💬 Для связи с заказчиком нажмите кнопку ниже 👇"
     )
 
+    # Кнопка для связи с заказчиком
     meneger_url = f'https://t.me/{user_name}'
     markup = InlineKeyboardBuilder()
     markup.add(InlineKeyboardButton(text="Заказчик", url=meneger_url))
-    await bot.send_message(chat_id=-1002420600068, text=new_task, reply_markup=markup.as_markup(), parse_mode="markdown")
+    await bot.send_message(chat_id=-1002420600068, text=new_task, reply_markup=markup.as_markup(), parse_mode="HTML")
 
-    kb_list = [[InlineKeyboardButton(text="🖋️ Создать заявку", callback_data="task_for_channel")],
-               [InlineKeyboardButton(text="💰 Баланс", callback_data="balance"),
-                InlineKeyboardButton(text="❗ Правила", callback_data="rules")],
-               [InlineKeyboardButton(text="👷‍♂️ Проверить рабочего", callback_data="check_employer")]]
-    markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
-    await callback.message.edit_text("✅ Заявка успешно отправлена!\nОжидайте откликов от исполнителей.",
-                                     reply_markup=markup)
+    # Кнопки для пользователя
+    kb_list = [
+        [InlineKeyboardButton(text="🖋️ Создать заявку", callback_data="task_for_channel")],
+        [InlineKeyboardButton(text="💰 Баланс", callback_data="balance"),
+         InlineKeyboardButton(text="❗ Правила", callback_data="rules")],
+        [InlineKeyboardButton(text="👷‍♂️ Проверить рабочего", callback_data="check_employer")]
+    ]
+    markup_user = InlineKeyboardMarkup(inline_keyboard=kb_list)
+    await callback.message.edit_text(
+        "✅ Заявка успешно отправлена!\nОжидайте откликов от исполнителей.",
+        reply_markup=markup_user
+    )
 
+    # Очищаем FSM
     await state.clear()
 
 
