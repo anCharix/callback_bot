@@ -84,7 +84,7 @@ async def get_feedbacks_by_username(session: AsyncSession, username: str) -> (li
 
 
 #Проверка на админов
-async def check_admins(user_id):
+def check_admins(user_id):
     admins_id = [285907768, 1132743840, 1443646292]
 
     if user_id in admins_id:
