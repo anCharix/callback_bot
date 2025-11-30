@@ -115,7 +115,6 @@ async def apply_place(message: Message, state: FSMContext, bot: Bot):
 async def apply_conditions(message: Message, state: FSMContext, bot: Bot):
     kb_list = [[InlineKeyboardButton(text="Отправить", callback_data="send_task")],
                [InlineKeyboardButton(text="Отменить", callback_data="cancel_task")]]
-    markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
     await state.update_data(conditions=message.text)
     answer = "🔍 Проверьте информацию:\nЕсли всё правильно — нажмите «Отправить».\nЕсли хотите внести правки — нажмите «Отменить»."
 
@@ -123,6 +122,7 @@ async def apply_conditions(message: Message, state: FSMContext, bot: Bot):
     if check_admins(message.from_user.id):
         kb_list.append([InlineKeyboardButton(text="Изменить пользователя", callback_data="change_user")])
         answer += "\nЕсли хотите поменять пользователя - нажмите «Изменить пользователя»"
+    markup = InlineKeyboardMarkup(inline_keyboard=kb_list)
 
     await message.answer(text=answer, reply_markup=markup)
 
