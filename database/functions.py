@@ -84,9 +84,18 @@ async def get_feedbacks_by_username(session: AsyncSession, username: str) -> (li
 
 
 #Проверка на админов
-def check_admins(user_id):
+def check_admins(user_id: int) -> bool:
     admins_id = [285907768, 1132743840, 1443646292]
 
     if user_id in admins_id:
         return True
     return False
+
+
+def escape_html(text: str) -> str:
+    """
+    Экранирует символы &, <, > для безопасного использования в HTML Telegram.
+    """
+    if not text:
+        return ""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

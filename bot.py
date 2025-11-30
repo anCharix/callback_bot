@@ -14,7 +14,7 @@ from sqlalchemy import select
 from database.session import get_session
 from database.models import User, Employee
 from database.functions import add_telegram_user, add_success_task, get_success_tasks, get_feedbacks_by_username, \
-    add_feedback, check_admins
+    add_feedback, check_admins, escape_html
 
 router = Router()
 
@@ -164,10 +164,10 @@ async def change_username(message: Message, state: FSMContext):
 @router.callback_query(F.data == "send_task")
 async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     data = await state.get_data()
-    task_information = data.get("task", "")
-    place = data.get("place", "")
-    conditions = data.get("conditions", "")
-    user_name = data.get("user_name") or callback.from_user.username  # берём username из state, если есть
+    task_information = escape_html(data.get("task", ""))
+    place = escape_html(data.get("place", ""))
+    conditions = escape_html(data.get("conditions", ""))
+    user_name = escape_html(data.get("user_name") or callback.from_user.username)
 
     async for session in get_session():
         telegram_id = int(callback.from_user.id)
@@ -192,7 +192,12 @@ async def send_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     meneger_url = f'https://t.me/{user_name}'
     markup = InlineKeyboardBuilder()
     markup.add(InlineKeyboardButton(text="Заказчик", url=meneger_url))
-    await bot.send_message(chat_id=-1002420600068, text=new_task, reply_markup=markup.as_markup(), parse_mode="HTML")
+    await bot.send_message(
+        chat_id=-1002420600068,
+        text=new_task,
+        reply_markup=markup.as_markup(),
+        parse_mode="HTML"
+    )
 
     # Кнопки для пользователя
     kb_list = [
